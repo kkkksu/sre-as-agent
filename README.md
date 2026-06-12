@@ -57,17 +57,19 @@ kagent.
 
 ## Slack App
 
-Create a Slack app for the bridge from `slack-app-manifest.yaml`, then install it to the workspace.
-The manifest enables Socket Mode, creates the `kagent` bot user, grants the bot scopes needed by
-the bridge, and subscribes to public/private channel message events.
+Create a Slack app from `slack-app-manifest.yaml`, then install it to the
+workspace. The manifest enables Socket Mode, creates the `kagent` bot user,
+grants the required bot scopes, and subscribes to public/private channel message
+events.
 
 After creating the app:
 
 - Create an app-level token with `connections:write`.
 - Copy the bot token (`xoxb-...`) after installing the app.
 - Copy the app-level token (`xapp-...`) from Basic Information > App-Level Tokens.
-- Set `KAGENT_BOT_USER_ID` to the Slack bot user ID, for example `<slack-bot-user-id>`.
-  Do not use the display name `kagent`; Slack mentions are sent as `<@...>`, using the Slack user ID.
+- Set `KAGENT_BOT_USER_ID` to the Slack bot user ID, for example
+  `<slack-bot-user-id>`. Do not use the display name `kagent`; Slack mentions
+  use the Slack user ID, as in `<@...>`.
 - Install the app and invite the bot to the Datadog alert channel.
 
 Configure Datadog's Slack monitor message to include a structured marker.
@@ -95,7 +97,7 @@ can investigate a specific host, service, or Kubernetes workload.
 
 ## Runtime Config
 
-Required environment variables:
+Environment variables:
 
 | Name | Description |
 | --- | --- |
@@ -130,7 +132,8 @@ sre-slack-bridge
 
 ## Kubernetes
 
-1. Replace placeholders in `k8s/datadog-agent.yaml` and `k8s/slack-bridge.yaml` locally.
+1. Replace placeholders in `k8s/datadog-agent.yaml` and
+   `k8s/slack-bridge.yaml` locally.
 2. Build and publish the image from `Dockerfile`.
 3. Update the deployment image.
 4. Apply:
@@ -140,7 +143,7 @@ kubectl apply -f k8s/datadog-agent.yaml
 kubectl apply -f k8s/slack-bridge.yaml
 ```
 
-The Makefile wraps the common local commands:
+The Makefile wraps common local commands:
 
 ```bash
 make kind-platform
@@ -159,8 +162,8 @@ If the pod shows `ImagePullBackOff` with `no match for platform in manifest`,
 the image was built for the wrong architecture; rebuild with `make
 build-kind-push`, then run `make restart-bridge`.
 
-This repo also includes a `justfile`. It uses `set dotenv-load`, so values from
-a local `.env` file are loaded automatically when you run recipes:
+The `justfile` uses `set dotenv-load`, so recipes automatically load values
+from a local `.env` file:
 
 ```dotenv
 REGISTRY=localhost:5001
