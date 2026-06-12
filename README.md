@@ -183,12 +183,3 @@ just local-port-forward-ui
 just test
 ```
 
-## Security
-
-This repository is structured to be safe for a public GitHub repo: checked-in
-manifests use placeholders, local `.env` files are ignored, and `.env.example`
-contains only templates. Review `SECURITY.md` and `PUBLICATION_CHECKLIST.md`
-before publishing.
-
-Rotate any Datadog keys that were previously committed or pasted into manifests.
-Keep Slack tokens and any authenticated kagent token only in Kubernetes Secrets.
