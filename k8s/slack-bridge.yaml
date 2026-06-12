@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sre-slack-bridge-secrets
+  namespace: kagent
+type: Opaque
+stringData:
+  # Replace locally before applying. Do not commit real values.
+  SLACK_BOT_TOKEN: "<slack-bot-token>"
+  SLACK_APP_TOKEN: "<slack-app-token>"
+  # Use a dummy non-empty value for local unsecure kagent.
+  KAGENT_API_TOKEN: "unused-in-local-unsecure-mode"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sre-slack-bridge-config
+  namespace: kagent
+data:
+  KAGENT_BOT_USER_ID: "<slack-bot-user-id>"
+  ALLOWED_CHANNEL_IDS: "<slack-alert-channel-id>"
+  # Optional. Recommended outside local testing. Space- or comma-separated Slack Datadog sender IDs.
+  TRUSTED_DATADOG_SENDER_IDS: ""
+  KAGENT_BASE_URL: "http://kagent-controller.kagent:8083"
+  KAGENT_NAMESPACE: "kagent"
+  KAGENT_AGENT_NAME: "datadog-agent"
+  KAGENT_REQUEST_TIMEOUT_SECONDS: "120"
+  DEDUPE_TTL_SECONDS: "3600"
+  LOG_LEVEL: "INFO"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sre-slack-bridge
+  namespace: kagent
+  labels:
+    app.kubernetes.io/name: sre-slack-bridge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: sre-slack-bridge
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: sre-slack-bridge
+    spec:
+      containers:
+        - name: bridge
+          image: localhost:5001/sre-slack-bridge:latest
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: sre-slack-bridge-config
+            - secretRef:
+                name: sre-slack-bridge-secrets
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL

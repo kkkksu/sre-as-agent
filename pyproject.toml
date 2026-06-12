@@ -1,0 +1,24 @@
+[project]
+name = "sre-as-agent"
+version = "0.1.0"
+description = "Slack bridge that invokes a kagent Datadog agent from alert mentions."
+requires-python = ">=3.11"
+dependencies = [
+  "httpx>=0.28.0",
+  "slack-bolt>=1.27.0",
+  "aiohttp>=3.9.0",
+]
+
+[project.scripts]
+sre-slack-bridge = "sre_as_agent.slack_bridge:main"
+
+[build-system]
+requires = ["setuptools>=80"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+

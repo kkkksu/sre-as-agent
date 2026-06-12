@@ -1,0 +1,40 @@
+_metadata:
+  major_version: 1
+  minor_version: 0
+
+display_information:
+  name: SRE as Agent
+  description: Sends Datadog alert mentions from Slack to kagent for investigation.
+  background_color: "#1D1C1D"
+
+features:
+  bot_user:
+    display_name: kagent
+    always_online: true
+
+oauth_config:
+  scopes:
+    bot:
+      # Required for posting acknowledgement and investigation replies in threads.
+      - chat:write
+      # Required for receiving message.channels events in public alert channels.
+      - channels:history
+      # Required only if Datadog posts to private alert channels.
+      - groups:history
+
+settings:
+  event_subscriptions:
+    bot_events:
+      # The bridge filters allowlisted channel messages for <@KAGENT_BOT_USER_ID>.
+      # This is more reliable for Datadog bot-originated messages than relying
+      # only on app_mention.
+      - message.channels
+      # Keep this if Datadog posts into private channels. Remove it otherwise.
+      - message.groups
+  interactivity:
+    is_enabled: false
+  org_deploy_enabled: false
+  socket_mode_enabled: true
+  token_rotation_enabled: false
+  is_hosted: false
+
