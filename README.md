@@ -231,8 +231,3 @@ just test
 - Keep autonomous alert investigations read-only.
 - Enable `TRUSTED_DATADOG_SENDER_IDS` outside local testing.
 - Review `SECURITY.md` before using this outside a local/dev environment.
-
-## Project status
-
-This is a small, pragmatic bridge for experimenting with Slack-driven SRE agent
-workflows. If it helps you reduce alert triage toil, a star is appreciated.
