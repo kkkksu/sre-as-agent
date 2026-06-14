@@ -10,6 +10,7 @@ in the same Slack thread.
 Datadog monitor -> Slack alert channel -> sre-slack-bridge
 -> kagent datadog-agent -> Slack thread reply
 ```
+<img width="832" height="547" alt="image" src="https://github.com/user-attachments/assets/aa3d771c-c2cc-4cfa-9899-15c2ae6a03a4" />
 
 ## Why this exists
 
