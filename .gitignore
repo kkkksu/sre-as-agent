@@ -17,6 +17,8 @@ venv/
 .env.*
 !.env.example
 *.enc.yaml
+*-secret.yaml
+!*-secret.example.yaml
 *.pem
 *.key
 *.crt
@@ -25,3 +27,6 @@ venv/
 .DS_Store
 .idea/
 .vscode/
+
+
+.agents/

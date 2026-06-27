@@ -24,7 +24,7 @@ data:
   TRUSTED_DATADOG_SENDER_IDS: ""
   KAGENT_BASE_URL: "http://kagent-controller.kagent:8083"
   KAGENT_NAMESPACE: "kagent"
-  KAGENT_AGENT_NAME: "datadog-agent"
+  KAGENT_AGENT_NAME: "sre-as-agent"
   KAGENT_REQUEST_TIMEOUT_SECONDS: "120"
   DEDUPE_TTL_SECONDS: "3600"
   LOG_LEVEL: "INFO"

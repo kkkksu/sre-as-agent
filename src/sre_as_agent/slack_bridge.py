@@ -60,7 +60,7 @@ class BridgeConfig:
             kagent_base_url=os.environ["KAGENT_BASE_URL"].rstrip("/"),
             kagent_api_token=os.environ["KAGENT_API_TOKEN"],
             kagent_namespace=os.getenv("KAGENT_NAMESPACE", "kagent"),
-            kagent_agent_name=os.getenv("KAGENT_AGENT_NAME", "datadog-agent"),
+            kagent_agent_name=os.getenv("KAGENT_AGENT_NAME", "sre-as-agent"),
             kagent_user_id=os.getenv("KAGENT_USER_ID", "admin@kagent.dev"),
             request_timeout_seconds=float(os.getenv("KAGENT_REQUEST_TIMEOUT_SECONDS", "120")),
             session_poll_interval_seconds=float(os.getenv("KAGENT_SESSION_POLL_INTERVAL_SECONDS", "2")),

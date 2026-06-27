@@ -49,6 +49,7 @@ local-url:
 
 apply-sre-agent:
     kubectl ${KUBE_CONTEXT:+--context "$KUBE_CONTEXT"} apply -f k8s/datadog-agent.yaml
+    kubectl ${KUBE_CONTEXT:+--context "$KUBE_CONTEXT"} apply -f k8s/github-mcp.yaml
 
 apply-bridge:
     kubectl ${KUBE_CONTEXT:+--context "$KUBE_CONTEXT"} apply -f k8s/slack-bridge.yaml

@@ -81,7 +81,7 @@ For this same-cluster setup, configure the bridge with:
 ```yaml
 KAGENT_BASE_URL: "http://kagent-controller.kagent:8083"
 KAGENT_NAMESPACE: "kagent"
-KAGENT_AGENT_NAME: "datadog-agent"
+KAGENT_AGENT_NAME: "sre-as-agent"
 KAGENT_API_TOKEN: "unused-in-local-unsecure-mode"
 ```
 
@@ -142,7 +142,7 @@ Copy `.env.example` to `.env` for local runs, or set these values in Kubernetes:
 | `KAGENT_BASE_URL` | kagent controller base URL. Use `http://kagent-controller.kagent:8083` for same-cluster local setup. |
 | `KAGENT_API_TOKEN` | Token sent as `Authorization: Bearer ...`. Use a dummy non-empty value for local unsecure kagent. |
 | `KAGENT_NAMESPACE` | Defaults to `kagent`. |
-| `KAGENT_AGENT_NAME` | Defaults to `datadog-agent`. |
+| `KAGENT_AGENT_NAME` | Defaults to `sre-as-agent`. |
 | `KAGENT_USER_ID` | Defaults to `admin@kagent.dev`. Used when polling kagent session events for the final answer. |
 | `KAGENT_SESSION_POLL_TIMEOUT_SECONDS` | Defaults to `90`. Maximum time to wait for kagent to write a final session event. |
 | `KAGENT_SESSION_POLL_INTERVAL_SECONDS` | Defaults to `2`. Delay between session event polls. |
@@ -224,6 +224,54 @@ just apply-all
 just local-port-forward-ui
 just test
 ```
+
+## ArgoCD
+
+If the cluster runs ArgoCD, **always install and upgrade it with server-side
+apply**:
+
+```bash
+make argocd-install
+# or directly:
+kubectl -n argocd apply --server-side --force-conflicts \
+  -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.4.3/manifests/install.yaml
+```
+
+Do **not** use a plain client-side `kubectl apply -f install.yaml`. ArgoCD's
+CRDs are large — the `ApplicationSet` CRD is ~1.3 MB — and client-side apply
+tries to store the whole object in the `kubectl.kubernetes.io/last-applied-configuration`
+annotation, which Kubernetes caps at 262144 bytes (256 KiB). The apply then
+fails for that one CRD with `metadata.annotations: Too long`, so the CRD is
+never created while the rest of the install succeeds. The
+`argocd-applicationset-controller` then crash-loops (`CrashLoopBackOff`) with
+`no matches for kind "ApplicationSet" in version "argoproj.io/v1alpha1"`.
+Server-side apply does not write that annotation, so it has no size limit. To
+recover an install that already hit this, apply just the missing CRD:
+
+```bash
+kubectl apply --server-side -f \
+  https://raw.githubusercontent.com/argoproj/argo-cd/v3.4.3/manifests/crds/applicationset-crd.yaml
+```
+
+Keep `ARGOCD_VERSION` in the `Makefile` matched to the running ArgoCD version.
+
+### Example Go service via ArgoCD
+
+`k8s/argocd/go-example-app.yaml` defines an ArgoCD `Application` that deploys a
+small Go HTTP service from its own public repo
+(`github.com/kkkksu/go-example`, manifests under `k8s/`) into the `go-example`
+namespace. ArgoCD deploys the manifests from git; it does **not** build the
+image — that is pushed to the local kind registry separately:
+
+```bash
+make go-example-image          # build + push localhost:5001/go-example:0.1.0
+make argocd-app-go-example     # register the Application (server-side apply)
+make argocd-app-status         # Application + go-example namespace pods
+```
+
+Because auto-sync watches git (not the registry), rebuilds must use a **new**
+`GO_EXAMPLE_TAG` and a matching bump in the service repo's
+`k8s/deployment.yaml` to trigger a rollout.
 
 ## Safety notes
 

@@ -1,0 +1,32 @@
+apiVersion: kagent.dev/v1alpha1
+kind: MCPServer
+metadata:
+  name: github-mcp
+  namespace: kagent
+spec:
+  transportType: stdio
+  deployment:
+    # Pin to a specific github-mcp-server release tag for reproducibility.
+    image: ghcr.io/github/github-mcp-server:latest
+    # The kagent/kmcp gateway spawns the stdio process by running cmd+args inside
+    # the container (image ENTRYPOINT is /server/github-mcp-server).
+    cmd: /server/github-mcp-server
+    args:
+      - stdio
+    port: 3000
+    env:
+      # Enforce read-only at the server; no mutating GitHub tools are exposed.
+      GITHUB_READ_ONLY: "1"
+      # Read-relevant toolsets useful for SRE investigation.
+      GITHUB_TOOLSETS: "context,repos,issues,pull_requests,actions"
+    secretRefs:
+      # Injects GITHUB_PERSONAL_ACCESS_TOKEN from the github-mcp-auth Secret.
+      # Create it from k8s/github-mcp-secret.example.yaml (kept out of git).
+      - name: github-mcp-auth
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        cpu: 250m
+        memory: 128Mi

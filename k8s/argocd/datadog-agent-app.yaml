@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: datadog-agent
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://helm.datadoghq.com
+    chart: datadog
+    # Pinned chart version. Verified against `helm show values datadog/datadog --version 3.228.0`.
+    targetRevision: 3.228.0
+    helm:
+      releaseName: datadog
+      values: |
+        datadog:
+          site: datadoghq.com
+          # API key is read from an existing Secret (bootstrapped out of band, see Phase 2).
+          # The Secret must store the key under the `api-key` field.
+          apiKeyExistingSecret: datadog-secret
+          dogstatsd:
+            # DogStatsD UDP port the Agent listens on.
+            port: 8125
+            # Accept DogStatsD traffic from outside the Agent pod (i.e. from app pods).
+            nonLocalTraffic: true
+            # Expose DogStatsD on the node host port so app pods can reach the
+            # node-local Agent via status.hostIP. Required for custom metrics.
+            useHostPort: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: datadog
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
