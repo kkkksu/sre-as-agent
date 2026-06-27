@@ -1,0 +1,23 @@
+apiVersion: kagent.dev/v1alpha2
+kind: RemoteMCPServer
+metadata:
+  name: datadog-mcp
+  namespace: kagent
+spec:
+  description: Datadog MCP Server
+  protocol: STREAMABLE_HTTP
+  url: https://mcp.datadoghq.eu/api/unstable/mcp-server/mcp?toolsets=core,apm
+  timeout: 30s
+  sseReadTimeout: 5m0s
+  terminateOnClose: true
+  headersFrom:
+    - name: DD_API_KEY
+      valueFrom:
+        type: Secret
+        name: datadog-secret
+        key: DD_API_KEY
+    - name: DD_APPLICATION_KEY
+      valueFrom:
+        type: Secret
+        name: datadog-secret
+        key: DD_APPLICATION_KEY
