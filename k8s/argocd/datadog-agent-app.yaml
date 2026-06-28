@@ -20,6 +20,18 @@ spec:
           # API key is read from an existing Secret (bootstrapped out of band, see Phase 2).
           # The Secret must store the key under the `api-key` field.
           apiKeyExistingSecret: datadog-secret
+          kubelet:
+            # kind's kubelet serves a self-signed cert the Agent can't verify, so
+            # the kubelet check fails ("requires kubelet_tls_verify = false") and no
+            # per-pod metadata/metrics are collected. Disable verification on kind.
+            tlsVerify: false
+          # Map the unified-service-tagging pod labels set on workloads (e.g.
+          # tags.datadoghq.com/service on go-example) to env/service/version tags
+          # on their infrastructure metrics.
+          podLabelsAsTags:
+            tags.datadoghq.com/env: env
+            tags.datadoghq.com/service: service
+            tags.datadoghq.com/version: version
           dogstatsd:
             # DogStatsD UDP port the Agent listens on.
             port: 8125
