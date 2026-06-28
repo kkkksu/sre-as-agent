@@ -14,7 +14,9 @@ spec:
       releaseName: datadog
       values: |
         datadog:
-          site: datadoghq.com
+          # EU org: the Datadog MCP server (k8s/datadog-mcp.yaml) targets
+          # mcp.datadoghq.eu and the US intake rejects this key with 403.
+          site: datadoghq.eu
           # API key is read from an existing Secret (bootstrapped out of band, see Phase 2).
           # The Secret must store the key under the `api-key` field.
           apiKeyExistingSecret: datadog-secret
@@ -26,6 +28,17 @@ spec:
             # Expose DogStatsD on the node host port so app pods can reach the
             # node-local Agent via status.hostIP. Required for custom metrics.
             useHostPort: true
+        agents:
+          containers:
+            agent:
+              # On kind/local clusters the Agent cannot reliably auto-detect a
+              # hostname and crashes ("unable to reliably determine the host name").
+              # Pin it to the Kubernetes node name (correct per-node for a DaemonSet).
+              env:
+                - name: DD_HOSTNAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: spec.nodeName
   destination:
     server: https://kubernetes.default.svc
     namespace: datadog
