@@ -34,13 +34,25 @@ spec:
          alert time.
       3. Find the failure signature. Use search_datadog_logs (scoped to the service/host
          and window, filtered to errors) and get_datadog_trace for slow/failing requests
-         to locate the failing component and the error message.
-      4. Correlate with change. Most incidents follow a change. Use the GitHub tools on the
-         relevant repo to find commits, merged PRs, and releases just before the alert onset
-         (list_commits, get_commit, search_commits, list_pull_requests, pull_request_read,
-         get_latest_release), and inspect CI with actions_list, actions_get, and
-         get_job_logs to see if a recent build or deploy failed or shipped a risky change.
-      5. Check rollout/deploy state. Use argo_rollouts_list to see whether a progressive
+         to locate the failing component and the error message. When the symptom is a
+         crashing or not-ready pod (CrashLoopBackOff, OOMKilled, failing probes), read the
+         Kubernetes evidence directly: k8s_get_events and k8s_get_pod_logs (use the previous
+         container's logs for a crashed pod) in the affected workload's namespace to capture
+         the exit reason and panic/stack trace.
+      4. Find the source repo. The service is deployed by Argo CD, so resolve its source
+         repository from the cluster rather than guessing. Use k8s_get_resources to list
+         Applications (apiVersion argoproj.io/v1alpha1) in the argocd namespace, then
+         k8s_get_resource_yaml on the Application whose spec.destination.namespace matches the
+         affected service; read spec.source.repoURL, spec.source.targetRevision, and
+         spec.source.path. Use that repoURL (owner/repo) for all GitHub queries.
+      5. Correlate with change. Most incidents follow a change. Use the GitHub tools on the
+         repo resolved in step 4 to find commits, merged PRs, and releases just before the
+         alert onset (list_commits, get_commit, search_commits, list_pull_requests,
+         pull_request_read, get_latest_release), and inspect CI with actions_list, actions_get,
+         and get_job_logs to see if a recent build or deploy failed or shipped a risky change.
+         Tie the failure signature from step 3 to the specific commit/PR that introduced it and
+         propose a concrete fix.
+      6. Check rollout/deploy state. Use argo_rollouts_list to see whether a progressive
          rollout for the affected workload is in progress, paused, or degraded; use
          argo_check_plugin_logs and the argo_verify_* tools if rollout health itself is
          suspect.
@@ -49,9 +61,11 @@ spec:
       data is missing, say so plainly instead of guessing.
 
       # Read-only and safety
-      Only use read/list/search/get/verify tools. Do NOT pause, promote, set images,
-      restart, roll back, or otherwise mutate any system. If remediation is warranted,
-      recommend it for a human to perform — never perform it yourself.
+      Only use read/list/search/get/describe/verify tools. Do NOT pause, promote, set images,
+      restart, roll back, apply, create, delete, patch, scale, annotate, label, or exec into
+      any resource, or otherwise mutate any system. The Kubernetes tools you have are getters
+      only; never attempt a mutating Kubernetes action even if one seems available. If
+      remediation is warranted, recommend it for a human to perform — never perform it yourself.
 
       # Response format (Slack thread reply)
       Be concise and skimmable:
@@ -122,11 +136,22 @@ spec:
           apiGroup: kagent.dev
           kind: RemoteMCPServer
           name: kagent-tool-server
-          # Read-only Argo Rollouts tools (list/inspect/verify). Mutating rollout
-          # controls are intentionally excluded to keep the read-only posture.
+          # Read-only tools only. Argo Rollouts inspect/verify plus read-only
+          # Kubernetes getters. Every mutating tool on this server (apply/create/
+          # delete/patch/scale/annotate/label/execute/rollout, and the rollout
+          # pause/promote/set-image controls) is intentionally excluded to keep
+          # the autonomous investigation read-only.
           toolNames:
+            # Argo Rollouts (read-only)
             - argo_rollouts_list
             - argo_check_plugin_logs
             - argo_verify_argo_rollouts_controller_install
             - argo_verify_gateway_plugin
             - argo_verify_kubectl_plugin_install
+            # Kubernetes (read-only): read the Argo CD Application CR to find the
+            # service's source repo, and read crash evidence (events + pod logs).
+            - k8s_get_resource_yaml
+            - k8s_get_resources
+            - k8s_describe_resource
+            - k8s_get_events
+            - k8s_get_pod_logs
