@@ -6,10 +6,61 @@ When Datadog posts an alert, this bridge picks it up from an allowlisted Slack
 channel, asks a kagent Datadog agent to investigate, and posts the findings back
 in the same Slack thread.
 
-```text
-Datadog monitor -> Slack alert channel -> sre-slack-bridge
--> kagent datadog-agent -> Slack thread reply
+## Architecture
+
+A GitOps deploy path (Developer → GitHub → Argo CD → cluster) feeds an autonomous,
+read-only incident-investigation loop. The numbered edges (1→8) trace one alert from a
+bad deploy to a root-cause reply in the Slack thread; the blue nodes are the agent's
+read-only investigation tools.
+
+```mermaid
+flowchart TB
+    dev(["Developer"])
+    gh[("GitHub<br/>kkkksu/go-example")]
+
+    subgraph cluster["kind-kagent cluster (OrbStack)"]
+      direction TB
+      subgraph argocd["ns: argocd"]
+        argo["Argo CD<br/>Application: go-example"]
+      end
+      subgraph goex["ns: go-example"]
+        pod["go-example pod<br/>CrashLoopBackOff"]
+      end
+      subgraph ddns["ns: datadog"]
+        agent["Datadog Agent DaemonSet<br/>kubelet + kube-state-metrics"]
+      end
+      subgraph kag["ns: kagent"]
+        bridge["sre-slack-bridge<br/>verify marker · dedupe · thread"]
+        sre["kagent agent: sre-as-agent<br/>READ-ONLY"]
+        tools["kagent-tools<br/>k8s events/logs · Argo CD App read"]
+        ghmcp["GitHub MCP"]
+      end
+    end
+
+    ddbe["Datadog EU<br/>Monitor 110540929<br/>crashloopbackoff &gt;= 1"]
+    slack["Slack #alert channel<br/>C0B7LQVPVA5"]
+    ddmcp["Datadog MCP<br/>mcp.datadoghq.eu"]
+
+    dev -->|"1 · git push bug"| gh
+    gh -->|"2 · auto-sync"| argo
+    argo -->|"deploy"| pod
+    pod -->|"3 · pod state / logs"| agent
+    agent -->|"4 · metrics"| ddbe
+    ddbe -->|"5 · alert + JSON marker<br/>(Datadog Slack integration)"| slack
+    slack -->|"6 · Socket Mode event"| bridge
+    bridge -->|"7 · A2A invoke"| sre
+    sre -->|"service + problem"| ddmcp
+    sre -->|"crash evidence + repoURL"| tools
+    tools -.->|"reads Application CR"| argo
+    sre -->|"commit + fix"| ghmcp
+    ghmcp -.->|"reads repo"| gh
+    sre -->|"report"| bridge
+    bridge -->|"8 · thread reply"| slack
+
+    classDef ro fill:#e6f3ff,stroke:#3178c6,color:#0b3d66;
+    class sre,tools,ghmcp,ddmcp ro;
 ```
+
 <img width="832" height="547" alt="image" src="https://github.com/user-attachments/assets/aa3d771c-c2cc-4cfa-9899-15c2ae6a03a4" />
 
 ## Why this exists
